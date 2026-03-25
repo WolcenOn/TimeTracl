@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TimeTrack — Registro de Jornada</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#111}::-webkit-scrollbar-thumb{background:#333}
+  body{font-family:'DM Mono','Courier New',monospace;min-height:100vh;background:#0d0d0f;color:#e8e4dc;}
+  input,select{background:#161618;border:1px solid #2a2a2e;color:#e8e4dc;font-family:'DM Mono',monospace;font-size:13px;padding:8px 12px;outline:none;border-radius:2px;transition:border-color .2s;width:100%;}
+  input:focus,select:focus{border-color:#f5c842;}
+  input[type=number]::-webkit-inner-spin-button{opacity:.3}
+  .btn-primary{background:#f5c842;color:#0d0d0f;border:none;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;padding:10px 20px;border-radius:2px;transition:opacity .2s;}
+  .btn-primary:hover{opacity:.85;}
+  .btn-ghost{background:none;border:1px solid #2a2a2e;color:#888;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;padding:6px 12px;border-radius:2px;transition:all .2s;}
+  .btn-ghost:hover{border-color:#555;color:#e8e4dc;}
+  .nav-btn{background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:.15em;text-transform:uppercase;padding:10px 18px;color:#555;transition:color .2s;}
+  .nav-btn:hover{color:#e8e4dc;}
+  .nav-btn.active{color:#f5c842;border-bottom-color:#f5c842;}
+  .view{display:none;animation:fadeIn .25s ease;}
+  .view.active{display:block;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+  .card{background:#111113;border:1px solid #1e1e22;border-radius:4px;padding:20px;}
+  .label{font-size:10px;color:#555;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;}
+  table{width:100%;border-collapse:collapse;font-size:12px;}
+  th{padding:8px 10px;text-align:left;color:#444;letter-spacing:.1em;font-size:10px;font-weight:400;text-transform:uppercase;border-bottom:1px solid #1e1e22;}
+  td{padding:9px 10px;border-bottom:1px solid #111;vertical-align:middle;}
+  tr:hover td{background:#161618;}
+  .pill{display:inline-block;padding:2px 8px;border-radius:2px;font-size:11px;}
+  .pill-pos{background:rgba(74,222,128,.1);color:#4ade80;}
+  .pill-neg{background:rgba(248,113,113,.1);color:#f87171;}
+  .pill-zero{background:rgba(136,136,136,.1);color:#888;}
+  .pill-vac{background:rgba(96,165,250,.1);color:#60a5fa;}
+  .pill-baja{background:rgba(251,191,36,.12);color:#fbbf24;}
+  .pill-medica{background:rgba(167,139,250,.12);color:#a78bfa;}
+  .stat-bar{display:flex;gap:1px;margin-bottom:16px;flex-wrap:wrap;}
+  .stat-cell{flex:1;min-width:80px;background:#111113;border:1px solid #1e1e22;padding:12px 14px;}
+  .stat-cell .s-label{font-size:9px;color:#444;letter-spacing:.15em;text-transform:uppercase;margin-bottom:4px;}
+  .stat-cell .s-val{font-size:15px;font-family:'Syne',sans-serif;font-weight:700;}
+  .month-card{background:#111113;border:1px solid #1e1e22;border-radius:4px;padding:20px;margin-bottom:12px;}
+  .month-card:hover{border-color:#2a2a2e;}
+  .month-filter{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+  .month-filter .btn-ghost.sel{border-color:#f5c842;color:#f5c842;}
+  .empty{color:#333;font-size:13px;padding:40px 0;text-align:center;}
+  .saved{display:none;background:#4ade80;color:#0d0d0f;font-size:10px;padding:2px 8px;border-radius:2px;letter-spacing:.1em;}
+  .del-btn{padding:3px 8px;font-size:11px;color:#f87171;border-color:#2a1a1a;}
+  .del-btn:hover{border-color:#f87171 !important;color:#f87171 !important;}
+  .edit-btn{padding:3px 8px;font-size:11px;}
+  .nota-cell{color:#555;font-style:italic;font-size:11px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .section-title{font-size:10px;color:#f5c842;letter-spacing:.2em;text-transform:uppercase;margin-bottom:20px;}
+  .cfg-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .divider{border:none;border-top:1px solid #1e1e22;margin:20px 0;}
+  .form-row{display:grid;gap:12px;margin-bottom:14px;}
+  .row-2{grid-template-columns:1fr 1fr;}
+  .row-3{grid-template-columns:1fr 1fr 1fr;}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;font-size:11px;color:#555;}
+  .legend span{display:flex;align-items:center;gap:5px;}
+  .dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0;}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;align-items:center;justify-content:center;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:#111113;border:1px solid #2a2a2e;border-radius:6px;padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;}
+  .modal h2{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;margin-bottom:20px;}
+  .info-box{font-size:11px;padding:8px 12px;border-radius:2px;margin-bottom:14px;}
+  @media(max-width:700px){
+    .row-3{grid-template-columns:1fr 1fr;}
+    .hide-mobile{display:none;}
+    #header{flex-direction:column;gap:12px;align-items:flex-start;}
+    .modal{margin:16px;width:calc(100% - 32px);}
+  }
+</style>
+</head>
+<body>
+
+<div style="border-bottom:1px solid #1e1e22;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;" id="header">
+  <div>
+    <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;letter-spacing:-.02em;color:#f5c842;">TIMETRACK</div>
+    <div style="font-size:10px;color:#444;letter-spacing:.2em;text-transform:uppercase;margin-top:2px;">Registro de jornada laboral</div>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    <span class="saved" id="saved-badge">GUARDADO</span>
+    <nav style="display:flex;">
+      <button class="nav-btn active" onclick="switchView(this,'registro')">Registro</button>
+      <button class="nav-btn" onclick="switchView(this,'resumen')">Resumen</button>
+      <button class="nav-btn" onclick="switchView(this,'ajustes')">Ajustes</button>
+    </nav>
+  </div>
+</div>
+
+<div style="padding:24px 28px;max-width:1100px;">
+
+  <!-- REGISTRO -->
+  <div class="view active" id="view-registro">
+    <div style="margin-bottom:20px;">
+      <button class="btn-primary" onclick="openModal(null)">+ Añadir registro</button>
+    </div>
+    <div class="legend">
+      <span><span class="dot" style="background:#4ade80"></span>Horas extra</span>
+      <span><span class="dot" style="background:#f87171"></span>Horas pendientes</span>
+      <span><span class="dot" style="background:#60a5fa"></span>Vacaciones</span>
+      <span><span class="dot" style="background:#fbbf24"></span>Baja</span>
+      <span><span class="dot" style="background:#a78bfa"></span>Cita médica</span>
+    </div>
+    <div class="month-filter" id="month-filter"></div>
+    <div id="stat-bar"></div>
+    <div id="tabla-wrapper"><div class="empty">Sin registros todavía. ¡Añade tu primera jornada!</div></div>
+  </div>
+
+  <!-- RESUMEN -->
+  <div class="view" id="view-resumen">
+    <div class="section-title">Resumen mensual</div>
+    <div id="resumen-content"><div class="empty">Aún no hay datos registrados.</div></div>
+  </div>
+
+  <!-- AJUSTES -->
+  <div class="view" id="view-ajustes">
+    <div class="section-title">Configuración</div>
+    <div class="card" style="max-width:440px;">
+      <div style="font-size:11px;color:#888;margin-bottom:14px;">Jornada estándar</div>
+      <div class="cfg-row">
+        <div><div class="label">Horas</div><input type="number" id="cfg-horas" min="0" max="24" value="8" oninput="saveConfig()"></div>
+        <div><div class="label">Minutos</div><input type="number" id="cfg-minutos" min="0" max="59" value="0" oninput="saveConfig()"></div>
+      </div>
+      <hr class="divider">
+      <div style="font-size:11px;color:#888;margin-bottom:14px;">Descanso por defecto</div>
+      <div style="max-width:180px;margin-bottom:4px;">
+        <div class="label">Minutos de descanso</div>
+        <input type="number" id="cfg-descanso" min="0" max="180" value="30" oninput="saveConfig()">
+      </div>
+      <hr class="divider">
+      <div style="font-size:11px;color:#888;margin-bottom:14px;">Horario por defecto</div>
+      <div class="cfg-row">
+        <div><div class="label">Hora de entrada</div><input type="time" id="cfg-entrada" value="09:00" oninput="saveConfig()"></div>
+        <div><div class="label">Hora de salida</div><input type="time" id="cfg-salida" value="17:00" oninput="saveConfig()"></div>
+      </div>
+      <div style="padding:12px;background:#0d0d0f;border-radius:2px;font-size:12px;color:#888;" id="cfg-preview"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <h2 id="modal-title">+ Nuevo registro</h2>
+
+    <div class="form-row row-2">
+      <div>
+        <div class="label">Fecha</div>
+        <input type="date" id="f-fecha">
+      </div>
+      <div>
+        <div class="label">Tipo de día</div>
+        <select id="f-tipo" onchange="onTipoChange()">
+          <option value="normal">🕐 Jornada normal</option>
+          <option value="vacaciones">🏖 Vacaciones</option>
+          <option value="baja">🤒 Baja laboral</option>
+          <option value="medica">🩺 Cita médica</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Normal -->
+    <div id="fields-normal">
+      <div class="form-row row-3">
+        <div><div class="label">Entrada</div><input type="time" id="f-entrada"></div>
+        <div><div class="label">Salida</div><input type="time" id="f-salida"></div>
+        <div>
+          <div class="label">Descanso (min)</div>
+          <input type="number" id="f-descanso" min="0" max="180">
+          <div style="font-size:10px;color:#444;margin-top:4px;" id="descanso-hint"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Médica -->
+    <div id="fields-medica" style="display:none;">
+      <div class="form-row row-3">
+        <div><div class="label">Entrada</div><input type="time" id="f-entrada-med"></div>
+        <div><div class="label">Salida</div><input type="time" id="f-salida-med"></div>
+        <div><div class="label">Duración cita (h)</div><input type="number" id="f-horas-medica" min="0" max="8" step="0.5" value="1"></div>
+      </div>
+      <div class="info-box" style="background:rgba(167,139,250,.07);color:#a78bfa;">
+        Las horas de cita médica se descontarán del cómputo de horas trabajadas automáticamente.
+      </div>
+    </div>
+
+    <!-- Vacaciones / Baja -->
+    <div id="fields-special" style="display:none;">
+      <div class="info-box" id="special-info" style="background:rgba(96,165,250,.07);color:#60a5fa;">
+        Este día se contabiliza como jornada completa cubierta.
+      </div>
+    </div>
+
+    <div class="form-row row-2">
+      <div style="grid-column:1/-1">
+        <div class="label">Nota (opcional)</div>
+        <input type="text" id="f-nota" placeholder="ej. reunión extra, revisión anual...">
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn-primary" onclick="saveRecord()">Guardar</button>
+      <button class="btn-ghost" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MONTHS=["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const DAYS=["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+
+let records=JSON.parse(localStorage.getItem('tt_records')||'{}');
+let config=JSON.parse(localStorage.getItem('tt_config')||'{}');
+config={jornadaHoras:8,jornadaMinutos:0,descanso:30,entrada:"09:00",salida:"17:00",...config};
+
+let activeMonth=today().slice(0,7);
+let editingId=null;
+
+document.getElementById('cfg-horas').value=config.jornadaHoras;
+document.getElementById('cfg-minutos').value=config.jornadaMinutos;
+document.getElementById('cfg-descanso').value=config.descanso;
+document.getElementById('cfg-entrada').value=config.entrada;
+document.getElementById('cfg-salida').value=config.salida;
+updateConfigPreview();
+render();
+
+function today(){return new Date().toISOString().slice(0,10);}
+function toMin(h,m){return h*60+m;}
+function fromMin(t){
+  const sign=t<0?'-':'';const a=Math.abs(t);
+  return sign+String(Math.floor(a/60)).padStart(2,'0')+':'+String(a%60).padStart(2,'0');
+}
+function jornadaMin(){return toMin(config.jornadaHoras,config.jornadaMinutos);}
+function flashSaved(){
+  const b=document.getElementById('saved-badge');
+  b.style.display='inline-block';
+  clearTimeout(b._t);b._t=setTimeout(()=>b.style.display='none',1500);
+}
+function saveData(){localStorage.setItem('tt_records',JSON.stringify(records));flashSaved();}
+
+function saveConfig(){
+  config.jornadaHoras=parseInt(document.getElementById('cfg-horas').value)||0;
+  config.jornadaMinutos=parseInt(document.getElementById('cfg-minutos').value)||0;
+  config.descanso=parseInt(document.getElementById('cfg-descanso').value)||0;
+  config.entrada=document.getElementById('cfg-entrada').value;
+  config.salida=document.getElementById('cfg-salida').value;
+  localStorage.setItem('tt_config',JSON.stringify(config));
+  updateConfigPreview();
+  render();
+}
+function updateConfigPreview(){
+  document.getElementById('cfg-preview').innerHTML=
+    `Jornada: <span style="color:#f5c842">${fromMin(jornadaMin())} h/día</span>&nbsp;&nbsp;·&nbsp;&nbsp;`+
+    `Entrada: <span style="color:#f5c842">${config.entrada}</span>&nbsp;&nbsp;·&nbsp;&nbsp;`+
+    `Salida: <span style="color:#f5c842">${config.salida}</span>&nbsp;&nbsp;·&nbsp;&nbsp;`+
+    `Descanso: <span style="color:#f5c842">${config.descanso} min</span>`;
+}
+
+function switchView(btn,v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  btn.classList.add('active');
+  if(v==='resumen')renderResumen();
+}
+
+function openModal(id){
+  editingId=id||null;
+  if(id){
+    const r=records[id];
+    document.getElementById('modal-title').textContent='✎ Editar registro';
+    document.getElementById('f-fecha').value=r.fecha;
+    document.getElementById('f-tipo').value=r.tipo||'normal';
+    document.getElementById('f-nota').value=r.nota||'';
+    const t=r.tipo||'normal';
+    if(t==='normal'){
+      document.getElementById('f-entrada').value=r.entrada||'';
+      document.getElementById('f-salida').value=r.salida||'';
+      document.getElementById('f-descanso').value=r.descanso??config.descanso;
+    } else if(t==='medica'){
+      document.getElementById('f-entrada-med').value=r.entrada||'';
+      document.getElementById('f-salida-med').value=r.salida||'';
+      document.getElementById('f-horas-medica').value=r.horasMedica||1;
+    }
+  } else {
+    document.getElementById('modal-title').textContent='+ Nuevo registro';
+    document.getElementById('f-fecha').value=today();
+    document.getElementById('f-tipo').value='normal';
+    document.getElementById('f-nota').value='';
+    document.getElementById('f-entrada').value=config.entrada;
+    document.getElementById('f-salida').value=config.salida;
+    document.getElementById('f-descanso').value=config.descanso;
+    document.getElementById('f-entrada-med').value=config.entrada;
+    document.getElementById('f-salida-med').value=config.salida;
+    document.getElementById('f-horas-medica').value=1;
+  }
+  document.getElementById('descanso-hint').textContent='Por defecto: '+config.descanso+' min';
+  onTipoChange();
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(){document.getElementById('modal').classList.remove('open');editingId=null;}
+function closeModalOutside(e){if(e.target===document.getElementById('modal'))closeModal();}
+
+function onTipoChange(){
+  const t=document.getElementById('f-tipo').value;
+  document.getElementById('fields-normal').style.display=t==='normal'?'':'none';
+  document.getElementById('fields-medica').style.display=t==='medica'?'':'none';
+  document.getElementById('fields-special').style.display=(t==='vacaciones'||t==='baja')?'':'none';
+  const si=document.getElementById('special-info');
+  if(t==='vacaciones'){si.style.color='#60a5fa';si.style.background='rgba(96,165,250,.07)';si.textContent='Este día se contabiliza como jornada completa cubierta (vacaciones).';}
+  else if(t==='baja'){si.style.color='#fbbf24';si.style.background='rgba(251,191,36,.07)';si.textContent='Este día se contabiliza como jornada completa cubierta (baja laboral).';}
+}
+
+function saveRecord(){
+  const fecha=document.getElementById('f-fecha').value;
+  const tipo=document.getElementById('f-tipo').value;
+  const nota=document.getElementById('f-nota').value.trim();
+  if(!fecha){alert('Indica la fecha.');return;}
+  let rec={id:editingId||(fecha+'_'+Date.now()),fecha,tipo,nota};
+
+  if(tipo==='normal'){
+    const entrada=document.getElementById('f-entrada').value;
+    const salida=document.getElementById('f-salida').value;
+    if(!entrada||!salida){alert('Indica la hora de entrada y salida.');return;}
+    const descanso=parseInt(document.getElementById('f-descanso').value)||0;
+    const[eh,em]=entrada.split(':').map(Number);
+    const[sh,sm]=salida.split(':').map(Number);
+    let trabajado=toMin(sh,sm)-toMin(eh,em)-descanso;
+    if(trabajado<0)trabajado+=24*60;
+    rec={...rec,entrada,salida,descanso,trabajado,diff:trabajado-jornadaMin()};
+
+  } else if(tipo==='medica'){
+    const entrada=document.getElementById('f-entrada-med').value;
+    const salida=document.getElementById('f-salida-med').value;
+    if(!entrada||!salida){alert('Indica la hora de entrada y salida.');return;}
+    const horasMedica=parseFloat(document.getElementById('f-horas-medica').value)||0;
+    const descanso=config.descanso;
+    const[eh,em]=entrada.split(':').map(Number);
+    const[sh,sm]=salida.split(':').map(Number);
+    let trabajado=toMin(sh,sm)-toMin(eh,em)-descanso;
+    if(trabajado<0)trabajado+=24*60;
+    // Las horas de cita se suman como cubiertas
+    rec={...rec,entrada,salida,descanso,horasMedica,trabajado,diff:trabajado-jornadaMin()+Math.round(horasMedica*60)};
+
+  } else {
+    // vacaciones / baja: jornada cubierta, diff 0
+    rec={...rec,trabajado:jornadaMin(),diff:0};
+  }
+
+  records[rec.id]=rec;
+  activeMonth=fecha.slice(0,7);
+  saveData();
+  closeModal();
+  render();
+}
+
+function deleteRecord(id){
+  if(!confirm('¿Eliminar este registro?'))return;
+  delete records[id];
+  saveData();
+  render();
+}
+
+function pillClass(diff,tipo){
+  if(tipo==='vacaciones')return'pill-vac';
+  if(tipo==='baja')return'pill-baja';
+  if(tipo==='medica')return'pill-medica';
+  return diff>0?'pill-pos':diff<0?'pill-neg':'pill-zero';
+}
+function typeLabel(tipo){
+  const m={normal:'',vacaciones:'<span class="pill pill-vac" style="font-size:10px">VAC</span>',
+    baja:'<span class="pill pill-baja" style="font-size:10px">BAJA</span>',
+    medica:'<span class="pill pill-medica" style="font-size:10px">MÉD</span>'};
+  return m[tipo]||'';
+}
+
+function render(){
+  const sorted=Object.values(records).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const allMonths=[...new Set(sorted.map(r=>r.fecha.slice(0,7)))].sort((a,b)=>b.localeCompare(a));
+
+  const mf=document.getElementById('month-filter');
+  if(!allMonths.length){mf.innerHTML='';}
+  else{
+    if(!allMonths.includes(activeMonth))activeMonth=allMonths[0];
+    mf.innerHTML=allMonths.map(m=>{
+      const[y,mo]=m.split('-');
+      return`<button class="btn-ghost${m===activeMonth?' sel':''}" onclick="setMonth('${m}')">${MONTHS[parseInt(mo)-1]} ${y}</button>`;
+    }).join('');
+  }
+
+  const mr=sorted.filter(r=>r.fecha.startsWith(activeMonth));
+
+  const sb=document.getElementById('stat-bar');
+  if(!mr.length){sb.innerHTML='';}
+  else{
+    const totalT=mr.reduce((s,r)=>s+(r.trabajado||0),0);
+    const totalD=mr.reduce((s,r)=>s+(r.diff||0),0);
+    const vac=mr.filter(r=>r.tipo==='vacaciones').length;
+    const baja=mr.filter(r=>r.tipo==='baja').length;
+    const med=mr.filter(r=>r.tipo==='medica').length;
+    const dc=totalD>0?'#4ade80':totalD<0?'#f87171':'#888';
+    sb.innerHTML='<div class="stat-bar">'+[
+      ['Días',mr.length,'#e8e4dc'],
+      ['Trabajado',fromMin(totalT),'#e8e4dc'],
+      ['Balance',(totalD>=0?'+':'')+fromMin(totalD),dc],
+      ['Vacaciones',vac,'#60a5fa'],
+      ['Bajas',baja,'#fbbf24'],
+      ['C. Médicas',med,'#a78bfa'],
+    ].map(([l,v,c])=>`<div class="stat-cell"><div class="s-label">${l}</div><div class="s-val" style="color:${c}">${v}</div></div>`).join('')+'</div>';
+  }
+
+  const tw=document.getElementById('tabla-wrapper');
+  if(!mr.length){
+    tw.innerHTML=`<div class="empty">${!allMonths.length?'Sin registros todavía. ¡Añade tu primera jornada!':'Sin registros para este mes.'}</div>`;
+    return;
+  }
+  tw.innerHTML=`<table>
+    <thead><tr>
+      <th>Fecha</th><th class="hide-mobile">Día</th><th>Tipo</th>
+      <th>Entrada</th><th>Salida</th>
+      <th class="hide-mobile">Descanso</th><th>Trabajado</th><th>Diferencia</th>
+      <th class="hide-mobile">Nota</th><th></th>
+    </tr></thead>
+    <tbody>${mr.map(r=>{
+      const d=new Date(r.fecha+'T12:00:00');
+      const t=r.tipo||'normal';
+      const pc=pillClass(r.diff,t);
+      const special=t==='vacaciones'||t==='baja';
+      const diffLabel=special
+        ?'<span class="pill pill-zero">—</span>'
+        :`<span class="pill ${pc}">${(r.diff||0)>=0?'+':''}${fromMin(r.diff||0)}</span>`;
+      const medNote=t==='medica'&&r.horasMedica?`<span style="font-size:10px;color:#a78bfa;margin-left:4px">cita ${r.horasMedica}h</span>`:'';
+      return`<tr>
+        <td style="color:#ccc">${r.fecha.split('-').reverse().join('/')}</td>
+        <td class="hide-mobile" style="color:#555;font-size:11px">${DAYS[d.getDay()]}</td>
+        <td>${typeLabel(t)}</td>
+        <td>${r.entrada||'<span style="color:#333">—</span>'}</td>
+        <td>${r.salida||'<span style="color:#333">—</span>'}</td>
+        <td class="hide-mobile" style="color:#666">${r.descanso!=null?r.descanso+'m':'<span style="color:#333">—</span>'}</td>
+        <td>${special?`<span style="color:#555">${fromMin(jornadaMin())}</span>`:fromMin(r.trabajado||0)}${medNote}</td>
+        <td>${diffLabel}</td>
+        <td class="nota-cell hide-mobile" title="${r.nota||''}">${r.nota||''}</td>
+        <td><div style="display:flex;gap:5px">
+          <button class="btn-ghost edit-btn" onclick="openModal('${r.id}')">✎</button>
+          <button class="btn-ghost del-btn" onclick="deleteRecord('${r.id}')">✕</button>
+        </div></td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+
+function renderResumen(){
+  const sorted=Object.values(records).sort((a,b)=>b.fecha.localeCompare(a.fecha));
+  const sum={};
+  sorted.forEach(r=>{
+    const ym=r.fecha.slice(0,7);
+    if(!sum[ym])sum[ym]={dias:0,totalT:0,totalD:0,vac:0,baja:0,med:0};
+    sum[ym].dias++;sum[ym].totalT+=r.trabajado||0;sum[ym].totalD+=r.diff||0;
+    if(r.tipo==='vacaciones')sum[ym].vac++;
+    else if(r.tipo==='baja')sum[ym].baja++;
+    else if(r.tipo==='medica')sum[ym].med++;
+  });
+  const months=Object.keys(sum).sort((a,b)=>b.localeCompare(a));
+  const rc=document.getElementById('resumen-content');
+  if(!months.length){rc.innerHTML='<div class="empty">Aún no hay datos registrados.</div>';return;}
+  rc.innerHTML=months.map(m=>{
+    const s=sum[m];const[y,mo]=m.split('-');
+    const pc=s.totalD>0?'pill-pos':s.totalD<0?'pill-neg':'pill-zero';
+    const bw=Math.min(100,Math.abs(s.totalD)/Math.max(1,s.dias*jornadaMin())*100*5);
+    const bc=s.totalD>=0?'#4ade80':'#f87171';
+    const extras=[
+      s.vac?`<span class="pill pill-vac">${s.vac} vacaciones</span>`:'',
+      s.baja?`<span class="pill pill-baja">${s.baja} baja</span>`:'',
+      s.med?`<span class="pill pill-medica">${s.med} cita médica</span>`:'',
+    ].filter(Boolean);
+    return`<div class="month-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+        <div>
+          <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;letter-spacing:-.02em;">
+            ${MONTHS[parseInt(mo)-1]} <span style="color:#333">${y}</span>
+          </div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:11px;color:#555;">
+            <span>${s.dias} días registrados</span>
+            <span>Trabajado: <span style="color:#e8e4dc">${fromMin(s.totalT)}</span></span>
+            <span>Esperado: <span style="color:#e8e4dc">${fromMin(s.dias*jornadaMin())}</span></span>
+          </div>
+          ${extras.length?`<div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">${extras.join('')}</div>`:''}
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:#444;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;">Balance</div>
+          <span class="pill ${pc}" style="font-size:15px;padding:4px 14px;">${s.totalD>=0?'+':''}${fromMin(s.totalD)}</span>
+        </div>
+      </div>
+      <div style="margin-top:14px;height:3px;background:#1e1e22;border-radius:2px;overflow:hidden;">
+        <div style="height:100%;width:${bw}%;background:${bc};border-radius:2px;transition:width .6s;"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setMonth(m){activeMonth=m;render();}
+</script>
+</body>
+</html>
