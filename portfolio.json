@@ -1,0 +1,10 @@
+{
+  "categoria": "Apps",
+  "icono": "📱",
+  "etiquetas": ["tiempo", "seguimiento", "productividad", "registro"],
+  "descripcion": "Aplicación para controlar, registrar o analizar el tiempo dedicado a tareas.",
+  "demo": "",
+  "destacado": false,
+  "orden": 44,
+  "ocultar": false
+}
